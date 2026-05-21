@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="hero">
+        <h1>Calculate Your <span>CGPA</span> with Precision</h1>
+        <p>A fast, sleek, and easy-to-use tool to keep track of your academic performance. Sign up to save your progress and never lose track of your grades.</p>
+        
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('calculator') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 2rem;">Go to Calculator <i data-lucide="arrow-right" style="display:inline-block; vertical-align: middle; width: 20px;"></i></a>
+        {% else %}
+            <a href="{{ url_for('signup') }}" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 2rem;">Get Started Now <i data-lucide="arrow-right" style="display:inline-block; vertical-align: middle; width: 20px;"></i></a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CGPA Calculator{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+    <nav>
+        <a href="{{ url_for('index') }}" class="logo">GradeCal</a>
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle Menu">
+            <i data-lucide="menu"></i>
+        </button>
+        <div class="nav-links" id="nav-links">
+            {% if current_user.is_authenticated %}
+            <span>Hello, {{ current_user.firstname }}</span>
+            <a href="{{ url_for('calculator') }}" class="btn btn-outline">Dashboard</a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline" style="border-color: var(--accent); color: var(--accent);">Admin Panel</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="btn btn-primary">Logout</a>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+            <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="flash-msg">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    {% block content %}
+    {% endblock %}
+
+    <script>
+        lucide.createIcons();
+        
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const navLinks = document.getElementById('nav-links');
+        if (menuBtn && navLinks) {
+            menuBtn.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

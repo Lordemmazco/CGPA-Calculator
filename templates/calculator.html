@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - CGPA Calculator{% endblock %}
+
+{% block content %}
+<div class="container" style="flex-direction: column; align-items: center; padding-top: 6rem; max-width: 900px; margin: 0 auto;">
+    <div class="calc-container" style="width: 100%;">
+        <div class="calc-header" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h2>Your Calculator</h2>
+                <button class="btn btn-outline" id="history-toggle-btn" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem;">
+                    <i data-lucide="clock" style="width: 18px;"></i> History
+                </button>
+            </div>
+            <div class="generate-container">
+                <label for="num-courses">How many courses do you offer?</label>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="number" id="num-courses" min="1" step="1" style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; width: 80px;" value="3">
+                    <button class="btn btn-outline" id="generate-courses-btn" style="padding: 0.8rem 1.5rem;">Generate</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="course-list" id="course-list">
+            <!-- Course rows will be dynamically added here -->
+        </div>
+
+        <div class="calc-actions">
+            <button class="btn btn-outline" id="clear-btn">Clear All</button>
+            <button class="btn btn-primary" id="calculate-btn">Calculate CGPA</button>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Quote Overlay -->
+<div class="quote-overlay" id="quote-overlay" style="display: none;">
+    <div class="quote-overlay-content">
+        <div class="quote-icon">✨</div>
+        <h3 id="performance-quote" style="font-style: italic; font-size: 1.8rem; color: var(--text-main); margin-bottom: 2rem; max-width: 600px; line-height: 1.5;"></h3>
+        <button class="btn btn-primary" id="reveal-btn" style="font-size: 1.2rem; padding: 1rem 3rem;">Show Result</button>
+    </div>
+</div>
+
+<!-- Fullscreen Result Overlay -->
+<div class="quote-overlay" id="result-overlay" style="display: none;">
+    <div class="quote-overlay-content">
+        <h3 style="color: var(--text-muted); font-weight: 400;">Your Calculated CGPA</h3>
+        <div class="cgpa-value" id="cgpa-display">0.00</div>
+        <div id="classification-display" style="font-size: 1.5rem; font-weight: 600; color: var(--accent); margin-bottom: 0.5rem;"></div>
+        <p id="total-units-display" style="color: var(--text-muted); margin-bottom: 2rem;">Total Units: 0</p>
+        <div style="display: flex; gap: 1rem;">
+            <button class="btn btn-outline" id="close-result-btn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- History Slide-out Panel -->
+<div class="history-backdrop" id="history-backdrop" style="display: none;"></div>
+<div class="history-panel" id="history-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3>Calculation History</h3>
+        <button class="btn-remove" id="history-close-btn" style="padding: 0.5rem;"><i data-lucide="x"></i></button>
+    </div>
+    {% if history %}
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for record in history %}
+            {% set c = record.cgpa %}
+            {% if c >= 4.5 %}
+                {% set class_str = "First Class Honours" %}
+            {% elif c >= 3.5 %}
+                {% set class_str = "Second Class Honours (Upper)" %}
+            {% elif c >= 2.4 %}
+                {% set class_str = "Second Class Honours (Lower)" %}
+            {% elif c >= 1.5 %}
+                {% set class_str = "Third Class Honours" %}
+            {% elif c >= 1.0 %}
+                {% set class_str = "Pass" %}
+            {% else %}
+                {% set class_str = "Fail" %}
+            {% endif %}
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 1.5rem; font-weight: 800; color: var(--accent);">{{ "%.2f"|format(record.cgpa) }}</span>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">{{ record.date_saved.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: var(--accent); margin-bottom: 0.2rem; font-weight: 600;">{{ class_str }}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-muted);">Total Units: {{ record.total_units }}</div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-outline" style="padding: 0.3rem 0.5rem;" onclick="restoreHistory(this, {{ record.id }})" data-courses='{{ record.courses_data | default("null", true) }}' title="Edit">
+                            <i data-lucide="edit-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p style="text-align: center; color: var(--text-muted);">No saved calculations yet.</p>
+    {% endif %}
+</div>
+
+<!-- Template for a course row -->
+<template id="course-row-template">
+    <div class="course-row">
+        <input type="text" placeholder="Course Title (e.g. CS101)" class="course-name">
+        <input type="number" placeholder="Units" class="course-units" min="1" step="1">
+        <select class="course-grade">
+            <option value="" disabled selected>Grade</option>
+            <option value="5.0">A</option>
+            <option value="4.0">B</option>
+            <option value="3.0">C</option>
+            <option value="2.0">D</option>
+            <option value="1.0">E</option>
+            <option value="0.0">F</option>
+        </select>
+        <button class="btn-remove" title="Remove Course"><i data-lucide="trash-2"></i></button>
+    </div>
+</template>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/calc.js') }}"></script>
+{% endblock %}

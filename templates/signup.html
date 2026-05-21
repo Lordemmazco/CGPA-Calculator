@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - CGPA Calculator{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="glass-panel" style="max-width: 480px;">
+        <h2>Create an Account</h2>
+        
+        <form method="POST" action="{{ url_for('signup') }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="firstname">First Name</label>
+                    <input type="text" id="firstname" name="firstname" required placeholder="John">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="lastname">Last Name</label>
+                    <input type="text" id="lastname" name="lastname" required placeholder="Doe">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="johndoe123">
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" placeholder="+234 800 000 0000">
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="john@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" required placeholder="Create a strong password">
+                    <button type="button" class="toggle-password" onclick="togglePassword('password', this)">
+                        <i data-lucide="eye"></i>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 1rem;">Sign Up</button>
+        </form>
+
+        <div style="text-align: center; margin: 1.5rem 0; color: var(--text-muted); position: relative;">
+            <hr style="border: 0; border-top: 1px solid var(--glass-border); position: absolute; width: 100%; top: 50%; z-index: 1;">
+            <span style="background: var(--bg-color); padding: 0 10px; position: relative; z-index: 2; font-size: 0.9rem;">OR</span>
+        </div>
+
+        <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+            <div id="g_id_onload"
+                 data-client_id="651086801146-94dj14nbm04ntbpu0c4dpm8atf1ekstd.apps.googleusercontent.com"
+                 data-context="signup"
+                 data-ux_mode="popup"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="outline"
+                 data-text="signup_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
+        </div>
+        <div class="auth-links">
+            Already have an account? <a href="{{ url_for('login') }}">Login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i data-lucide="eye-off"></i>';
+    } else {
+        input.type = 'password';
+        btn.innerHTML = '<i data-lucide="eye"></i>';
+    }
+    lucide.createIcons();
+}
+
+function handleCredentialResponse(response) {
+    fetch('/google_login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ credential: response.credential })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = "{{ url_for('calculator') }}";
+        } else {
+            alert(data.message || "Google Sign-up Failed.");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("An error occurred during Google Sign-up.");
+    });
+}
+</script>
+{% endblock %}
