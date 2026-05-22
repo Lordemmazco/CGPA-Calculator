@@ -10,7 +10,13 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cgpa-calc-super-secret'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+
+# Use environment database URL if available (for production databases like PostgreSQL), default to SQLite locally
+db_url = os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite')
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 GOOGLE_CLIENT_ID = "651086801146-94dj14nbm04ntbpu0c4dpm8atf1ekstd.apps.googleusercontent.com"
@@ -252,22 +258,24 @@ def admin_delete_user(id):
     db.session.commit()
     return jsonify({'success': True})
 
+with app.app_context():
+    db.create_all()
+    # Migration: add is_admin and courses_data columns if they don't exist yet
+    from sqlalchemy import text
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0 NOT NULL"))
+            conn.commit()
+            print("Migration applied: added is_admin column.")
+        except Exception:
+            pass  # Column already exists, nothing to do
+        try:
+            conn.execute(text("ALTER TABLE calculation_history ADD COLUMN courses_data TEXT"))
+            conn.commit()
+            print("Migration applied: added courses_data column.")
+        except Exception:
+            pass  # Column already exists, nothing to do
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        # Migration: add is_admin and courses_data columns if they don't exist yet
-        from sqlalchemy import text
-        with db.engine.connect() as conn:
-            try:
-                conn.execute(text("ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0 NOT NULL"))
-                conn.commit()
-                print("Migration applied: added is_admin column.")
-            except Exception:
-                pass  # Column already exists, nothing to do
-            try:
-                conn.execute(text("ALTER TABLE calculation_history ADD COLUMN courses_data TEXT"))
-                conn.commit()
-                print("Migration applied: added courses_data column.")
-            except Exception:
-                pass  # Column already exists, nothing to do
     app.run(debug=True)
+
